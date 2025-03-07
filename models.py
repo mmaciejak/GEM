@@ -12,18 +12,17 @@ class PersonCategory(str, Enum):
     special_guest = "special_guest"
     vip = "vip"
     media = "media"
-    
-class Accomodation_options(str, Enum):
-    nitki = "nitki"
-    hotel = "hotel"
-    other = "other"
-    own = "own"
-    
+
+class Accomodation(BaseModel):
+    name: str
+    vouchered: bool
+    adress: str | None
+
 class HandOutRule(BaseModel):
     for_group: PersonCategory
-    prefered_accomodation: Accomodation_options 
+    prefered_accomodation: Accomodation 
     vouchers_value_per_day : int | None
-    t_shit: bool | None
+    t_shirt: bool | None
     badge: bool | None
     program: bool | None
     confirmation : bool | None
@@ -42,7 +41,15 @@ class NewPerson(BaseModel):
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
-    accomodation: Accomodation_options | None = None
+    accomodation: Accomodation | None = None
+    
+class UpdatePerson(BaseModel):
+    first_name: str | None = None
+    last_name: str | None = None
+    arrival: datetime.date | None = None
+    departure: datetime.date | None = None
+    category: PersonCategory | None = None
+    accomodation: Accomodation | None = None
 
 class Person(BaseModel):
     id: uuid.UUID
@@ -51,5 +58,5 @@ class Person(BaseModel):
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
-    accomodation: Accomodation_options | None = None
+    accomodation: Accomodation | None = None
     handout: HandOut | None = None
