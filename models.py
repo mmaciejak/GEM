@@ -4,29 +4,29 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-class PersonCategory(str, Enum):
-    volunteer = "volunteer"
-    organizer = "organizer"
-    filmmaker = "filmmaker"
-    guest = "guest"
-    special_guest = "special_guest"
-    vip = "vip"
-    media = "media"
-
-class Accomodation(BaseModel):
+class Accommodation(BaseModel):
+    id: uuid.UUID
     name: str
-    vouchered: bool
+    vouchered: bool | None
+    adress: str | None
+    
+class UpdateAccommodation(BaseModel):
+    name: str | None
+    vouchered: bool | None
     adress: str | None
 
 class HandOutRule(BaseModel):
-    for_group: PersonCategory
-    prefered_accomodation: Accomodation 
+    prefered_accomodation: Accommodation 
     vouchers_value_per_day : int | None
     t_shirt: bool | None
     badge: bool | None
     program: bool | None
     confirmation : bool | None
-     
+
+class PersonCategory(BaseModel):
+    name: str
+    rule: HandOutRule
+
 class HandOut(BaseModel):
     t_shirt: bool | None = None
     badge: bool | None = None
@@ -38,25 +38,28 @@ class HandOut(BaseModel):
 class NewPerson(BaseModel):
     first_name: str
     last_name: str
+    associated_movie : str
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
-    accomodation: Accomodation | None = None
+    accommodation: Accommodation | None = None
     
 class UpdatePerson(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
+    associated_movie : str
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
-    accomodation: Accomodation | None = None
+    accommodation: Accommodation | None = None
 
 class Person(BaseModel):
     id: uuid.UUID
     first_name: str
     last_name: str
+    associated_movie : str
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
-    accomodation: Accomodation | None = None
+    accommodation: Accommodation | None = None
     handout: HandOut | None = None
