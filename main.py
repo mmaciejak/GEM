@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 import uuid
-from models import Person, NewPerson, UpdatePerson, Accommodation, UpdateAccommodation
+from models import Person, UpdatePerson, Accommodation, UpdateAccommodation
+
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI()
 
@@ -15,92 +17,82 @@ tags_metadata = [
 def update_field(new_value, current_value):
     return new_value if new_value is not None else current_value
 
-persons = [
-    Person(
-        id=uuid.uuid4(),
-        first_name="John",
-        last_name="Doe",
+persons = {
+    uuid.uuid4(): jsonable_encoder(
+        Person(
+            first_name="John",
+            last_name="Doe",
+        )
     )
-]
+}
 
-accommodations = [
-    Accommodation(
-        id=uuid.uuid4(),
-        name="Nitki",
-        vouchered=True,
-        adress="Nowa Sól"
+accommodations = {
+    uuid.uuid4() : jsonable_encoder(
+        Accommodation(
+            name="Nitki",
+            vouchered=True,
+            adress="Nowa Sól"
+        )
     )
-]
+}
 
 #Persons
 
 @app.get("/persons", tags=["Persons"])
 async def read_persons(limit: int = 1000):
-    return persons[:limit]
+    return persons
 
-@app.get("/person/{person_id}", response_model=Person, tags=["Persons"])
-async def read_person(person_id):
-    for person in persons:
-        if str(person.id) == person_id:
-            #calculate Handout
-            return person
-    raise HTTPException(status_code=404, detail="Item not found")
+@app.get("/person/{id}", response_model=Person, tags=["Persons"])
+async def read_person(id):
+    try: 
+        person = persons[uuid.UUID(id)]
+        return person
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Item not found") from e
     
-@app.post("/add_person", response_model=Person, tags=["Persons"])
-async def add_person(new_person: NewPerson):
-    person = Person(
-        id=uuid.uuid4(),
-        first_name=new_person.first_name,
-        last_name=new_person.last_name,
-        arrival=update_field(new_person.arrival, None),
-        departure=update_field(new_person.departure, None),
-        associated_movie=update_field(new_person.associated_movie, None),
-        category=update_field(new_person.category, None),
-        accommodation=update_field(new_person.accommodation, None)
-    )
-    persons.append(person)
+@app.post("/person", response_model=Person, tags=["Persons"])
+async def add_person(person: Person):
+    persons[uuid.uuid4] = jsonable_encoder(person)
     return person
 
-@app.patch("/update_person/{update_person_id}", response_model=Person, tags=["Persons"])
-async def update_person(update_person_id, update_person : UpdatePerson):
-    for person in persons:
-        if str(person.id) == update_person_id:
-            person.first_name = update_field(update_person.first_name, person.first_name)
-            person.last_name = update_field(update_person.last_name, person.last_name)
-            person.arrival = update_field(update_person.arrival, person.arrival)
-            person.departure = update_field(update_person.departure, person.departure)
-            person.associated_movie = update_field(update_person.associated_movie, person.associated_movie)
-            person.category = update_field(update_person.category, person.category)
-            person.accommodation = update_field(update_person.accommodation, person.accommodation)
-        return person
-    
+@app.patch("/person/{id}", response_model=Person, tags=["Persons"])
+async def update_person(id, update_person : UpdatePerson):
+    stored_person_data = persons[uuid.UUID(id)]
+    stored_person_model = Person(**stored_person_data)
+    update_data = update_person.model_dump(exclude_unset=True)
+    updated_person = stored_person_model.model_copy(update=update_data)
+    persons[id] = jsonable_encoder(updated_person)
+    return updated_person
+
+
 #Accommodations
 
 @app.get("/accommodations", tags=["Accommodations"])
 async def read_accomodations(limit: int = 1000):
-    return accommodations[:limit]
+    return accommodations
 
 @app.get("/accommodation/{id}", response_model=Accommodation, tags=["Accommodations"])
 async def read_accomodation(id):
-    for accommodation in accommodations:
-        if  accommodation.id == id:
-            return accommodation
-    raise HTTPException(status_code=404, detail="Item not found")
+    try: 
+        accommodation = accommodations[uuid.UUID(id)]
+        return accommodation
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Item not found") from e
     
-@app.post("/add_accommodation", response_model=Accommodation, tags=["Accommodations"])
-async def add_accommodation(new_accommodation: Accommodation):
+@app.post("/accommodation", response_model=Accommodation, tags=["Accommodations"])
+async def add_accommodation(accommodation: Accommodation):
     #should be check for names overlap
-    accomodation = new_accommodation
-    accommodations.append(accomodation)
-    return accomodation
+    accommodations[uuid.uuid4] = jsonable_encoder(accommodation)
+    return accommodation
 
-@app.patch("/update_accommodation/{id}", response_model=Accommodation, tags=["Accommodations"])
+@app.patch("/accommodation/{id}", response_model=Accommodation, tags=["Accommodations"])
 async def update_accommodation(id, update_accommodation:UpdateAccommodation):
-    for accommodation in accommodations:
-        if  accommodation.id == str(update_accommodation.id):
-            accommodation.name = update_field(update_accommodation.name, accommodation.name)
-            accommodation.address = update_field(update_accommodation.address, accommodation.address)
-            accommodation.vouchered = update_field(update_accommodation.vouchered, accommodation.vouchered)
+    stored_accommodation_data = accommodations[uuid.UUID(id)]
+    stored_accommodation_model = Accommodation(**stored_accommodation_data)
+    update_data = update_accommodation.model_dump(exclude_unset=True)
+    updated_accommodation = stored_accommodation_model.model_copy(update=update_data)
+    accommodations[uuid.UUID(id)] = jsonable_encoder(updated_accommodation)
+    return updated_accommodation
 
 #Rules
 

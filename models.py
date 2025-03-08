@@ -5,7 +5,6 @@ from enum import Enum
 from pydantic import BaseModel
 
 class Accommodation(BaseModel):
-    id: uuid.UUID
     name: str
     vouchered: bool | None
     adress: str | None
@@ -34,30 +33,20 @@ class HandOut(BaseModel):
     accomodation_vouchers: int | None = None
     program: bool | None = None
     confirmation: bool | None = None
-
-class NewPerson(BaseModel):
-    first_name: str
-    last_name: str
-    associated_movie : str
-    arrival: datetime.date | None = None
-    departure: datetime.date | None = None
-    category: PersonCategory | None = None
-    accommodation: Accommodation | None = None
     
 class UpdatePerson(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
-    associated_movie : str
+    associated_movie : str | None = None
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
     accommodation: Accommodation | None = None
 
 class Person(BaseModel):
-    id: uuid.UUID
     first_name: str
     last_name: str
-    associated_movie : str
+    associated_movie : str | None = None
     arrival: datetime.date | None = None
     departure: datetime.date | None = None
     category: PersonCategory | None = None
