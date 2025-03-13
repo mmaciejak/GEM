@@ -1,10 +1,35 @@
 from fastapi import FastAPI, HTTPException
+from sqlmodel import Field, Session, SQLModel, create_engine, select
+
 import uuid
-from models import Person, UpdatePerson, Accommodation, UpdateAccommodation
+from models import (
+    Person,
+    PersonUpdate,
+    PersonPublic,
+    Accommodation,
+    UpdateAccommodation,
+    AccommodationPublic,
+    AccommodationCreate,
+    PersonCreate,
+)
 
 from fastapi.encoders import jsonable_encoder
 
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
 app = FastAPI()
+
+persons = []
+accommodations = []
 
 tags_metadata = [
     {"name": "Persons", "description": "Guests ans staff"},
@@ -14,49 +39,42 @@ tags_metadata = [
     {"name": "Users", "description": "Users of the system"},
 ]
 
+
 def update_field(new_value, current_value):
     return new_value if new_value is not None else current_value
 
-persons = {
-    uuid.uuid4(): jsonable_encoder(
-        Person(
-            first_name="John",
-            last_name="Doe",
-        )
-    )
-}
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
 
-accommodations = {
-    uuid.uuid4() : jsonable_encoder(
-        Accommodation(
-            name="Nitki",
-            vouchered=True,
-            adress="Nowa Sól"
-        )
-    )
-}
-
-#Persons
-
+# Persons 
 @app.get("/persons", tags=["Persons"])
-async def read_persons(limit: int = 1000):
-    return persons
+async def read_persons():
+    with Session(engine) as session:
+        persons = session.exec(select(Person)).all()
+        return persons
 
-@app.get("/person/{id}", response_model=Person, tags=["Persons"])
+
+@app.get("/person/{id}", response_model=PersonPublic, tags=["Persons"])
 async def read_person(id):
-    try: 
+    try:
         person = persons[uuid.UUID(id)]
         return person
     except Exception as e:
         raise HTTPException(status_code=404, detail="Item not found") from e
-    
-@app.post("/person", response_model=Person, tags=["Persons"])
-async def add_person(person: Person):
-    persons[uuid.uuid4] = jsonable_encoder(person)
+
+
+@app.post("/person", response_model=PersonPublic, tags=["Persons"])
+async def add_person(person: PersonCreate):
+    with Session(engine) as session:
+        session.add(person)
+        session.commit()
+        session.refresh(person)
     return person
 
-@app.patch("/person/{id}", response_model=Person, tags=["Persons"])
-async def update_person(id, update_person : UpdatePerson):
+
+@app.patch("/person/{id}", response_model=PersonPublic, tags=["Persons"])
+async def update_person(id, update_person: PersonUpdate):
     stored_person_data = persons[uuid.UUID(id)]
     stored_person_model = Person(**stored_person_data)
     update_data = update_person.model_dump(exclude_unset=True)
@@ -65,28 +83,37 @@ async def update_person(id, update_person : UpdatePerson):
     return updated_person
 
 
-#Accommodations
+@app.delete("/person/{id}", tags=["Persons"])
+async def delete_person(id):
+    del persons[uuid.UUID(id)]
+
+
+# Accommodations
+
 
 @app.get("/accommodations", tags=["Accommodations"])
 async def read_accomodations(limit: int = 1000):
     return accommodations
 
-@app.get("/accommodation/{id}", response_model=Accommodation, tags=["Accommodations"])
+
+@app.get("/accommodation/{id}", response_model=AccommodationPublic, tags=["Accommodations"])
 async def read_accomodation(id):
-    try: 
+    try:
         accommodation = accommodations[uuid.UUID(id)]
         return accommodation
     except Exception as e:
         raise HTTPException(status_code=404, detail="Item not found") from e
-    
-@app.post("/accommodation", response_model=Accommodation, tags=["Accommodations"])
-async def add_accommodation(accommodation: Accommodation):
-    #should be check for names overlap
+
+
+@app.post("/accommodation", response_model=AccommodationPublic, tags=["Accommodations"])
+async def add_accommodation(accommodation: AccommodationCreate):
+    # should be check for names overlap
     accommodations[uuid.uuid4] = jsonable_encoder(accommodation)
     return accommodation
 
-@app.patch("/accommodation/{id}", response_model=Accommodation, tags=["Accommodations"])
-async def update_accommodation(id, update_accommodation:UpdateAccommodation):
+
+@app.patch("/accommodation/{id}", response_model=AccommodationPublic, tags=["Accommodations"])
+async def update_accommodation(id, update_accommodation: UpdateAccommodation):
     stored_accommodation_data = accommodations[uuid.UUID(id)]
     stored_accommodation_model = Accommodation(**stored_accommodation_data)
     update_data = update_accommodation.model_dump(exclude_unset=True)
@@ -94,8 +121,14 @@ async def update_accommodation(id, update_accommodation:UpdateAccommodation):
     accommodations[uuid.UUID(id)] = jsonable_encoder(updated_accommodation)
     return updated_accommodation
 
-#Rules
+
+@app.delete("/accommodation/{id}", tags=["Accommodations"])
+async def delete_accommodation(id):
+    del accommodations[uuid.UUID(id)]
 
 
+# Categories
 
-#Users
+# Rules
+
+# Users
