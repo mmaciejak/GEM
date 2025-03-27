@@ -1,40 +1,7 @@
 import datetime
 import uuid
-from enum import Enum
-
-from pydantic import BaseModel
 
 from sqlmodel import Field, SQLModel
-
-""" class Hero(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    secret_name: str
-    age: int | None = Field(default=None, index=True)
-    
-class HeroBase(SQLModel):
-    name: str = Field(index=True)
-    secret_name: str
-    age: int | None = Field(default=None, index=True)
-
-
-class Hero(HeroBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-
-
-class HeroCreate(HeroBase):
-    pass
-
-
-class HeroPublic(HeroBase):
-    id: int
-
-
-class HeroUpdate(SQLModel):
-    name: str | None = None
-    secret_name: str | None = None
-    age: int | None = None
- """
  
 class AccommodationBasae(SQLModel):
     name: str
@@ -132,7 +99,7 @@ class PersonBase(SQLModel):
     handout: uuid.UUID | None = None
     checked_in: bool | None = None
     check_in_time: datetime.datetime | None = None
-    notes: str
+    notes: str | None = None
 
 class Person(PersonBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -154,3 +121,4 @@ class PersonUpdate(SQLModel):
     handout: uuid.UUID | None = None
     checked_in: bool | None=None
     check_in_time: datetime.datetime | None = None
+    notes: str | None = None
