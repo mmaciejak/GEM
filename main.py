@@ -12,6 +12,11 @@ from models import (
     AccommodationPublic,
     AccommodationCreate,
     PersonCreate,
+    Category,
+    CategoryUpdate,
+    CategoryPublic,
+    CategoryCreate,
+    
 )
 from database import get_by_str_id, add_new, update_by_str_id, delete_by_str_id
 
@@ -75,8 +80,6 @@ async def delete_person(id):
 
 
 # Accommodations
-
-
 @app.get("/accommodations", tags=["Accommodations"])
 async def read_accomodations(limit: int = 1000) -> list[AccommodationPublic]:
     with Session(engine) as session:
@@ -105,7 +108,33 @@ async def delete_accommodation(id):
 
 
 # Categories
+@app.get("/categories", tags=["Categories"])
+async def read_categories(limit: int = 1000) -> list[CategoryPublic]:
+    with Session(engine) as session:
+        categories = session.exec(select(Category)).all()
+    return categories
 
-# Rules
+
+@app.get("/category/{id}", response_model=CategoryPublic, tags=["Categories"])
+async def read_category(id: str):
+    return get_by_str_id(Category, id, engine)
+
+
+@app.post("/category", response_model=CategoryPublic, tags=["Categories"])
+async def add_category(category: CategoryCreate):
+    return add_new(Category, category, engine)
+
+
+@app.patch("/category/{id}", response_model=CategoryPublic, tags=["Categories"])
+async def update_category(id, update_category: CategoryUpdate):
+    return update_by_str_id(Category, id, update_category, engine)
+
+
+@app.delete("/category/{id}", tags=["Categories"])
+async def delete_category(id):
+    return delete_by_str_id(Category, id, engine)
+
+
+# HandOut Rules
 
 # Users

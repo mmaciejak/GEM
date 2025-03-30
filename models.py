@@ -48,20 +48,20 @@ class HandOutRuleUpdate(SQLModel):
     program: bool | None
     confirmation : bool | None
 
-class PersonCategoryBase(SQLModel):
+class CategoryBase(SQLModel):
     name: str
     rule: uuid.UUID | None = None   
 
-class PersonCategory(PersonCategoryBase, table=True):
+class Category(CategoryBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
-class PersonCategoryPublic(PersonCategoryBase):
+class CategoryPublic(CategoryBase):
     id: uuid.UUID
     
-class PersonCategoryCreate(PersonCategoryBase):
+class CategoryCreate(CategoryBase):
     pass
     
-class PersonCategoryUpdate(SQLModel):
+class CategoryUpdate(SQLModel):
     name: str | None = None   
     rule: uuid.UUID | None = None   
 
