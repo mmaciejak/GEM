@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -7,16 +7,23 @@ from models import (
     Person,
     PersonUpdate,
     PersonPublic,
+    PersonPublicWithRelations,
     Accommodation,
     UpdateAccommodation,
     AccommodationPublic,
     AccommodationCreate,
+    AccomodationPublicWithPersons,
     PersonCreate,
     Category,
     CategoryUpdate,
     CategoryPublic,
     CategoryCreate,
-    
+    CategoryPubliWithRelations,
+    HandOutRule,
+    HandOutRuleCreate,
+    HandOutRulePublic,
+    HandOutRuleUpdate,
+    HandOutRulePublicWithCategory
 )
 from database import get_by_str_id, add_new, update_by_str_id, delete_by_str_id
 
@@ -30,6 +37,9 @@ engine = create_engine(sqlite_url, echo=True, connect_args=connect_args)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
+def get_session():
+    with Session(engine) as session:
+        yield session
 
 app = FastAPI()
 
@@ -53,88 +63,110 @@ def on_startup():
 
 # Persons
 @app.get("/persons", tags=["Persons"])
-async def read_persons() -> list[PersonPublic]:
-    with Session(engine) as session:
-        persons = session.exec(select(Person)).all()
-        return persons
+async def read_persons(session: Session = Depends(get_session),) -> list[PersonPublic]:
+    persons = session.exec(select(Person)).all()
+    return persons
 
 
-@app.get("/person/{id}", response_model=PersonPublic, tags=["Persons"])
-async def read_person(id: str):
-    return get_by_str_id(Person, id, engine)
+@app.get("/person/{id}", response_model=PersonPublicWithRelations, tags=["Persons"])
+async def read_person(*, session: Session = Depends(get_session), id: str):
+    return get_by_str_id(Person, id, session)
 
 
-@app.post("/person", response_model=PersonPublic, tags=["Persons"])
-async def add_person(person: PersonCreate):
-    return add_new(Person, person, engine)
+@app.post("/person", response_model=PersonPublicWithRelations, tags=["Persons"], status_code=status.HTTP_201_CREATED)
+async def add_person(*, session: Session = Depends(get_session), person: PersonCreate):
+    return add_new(Person, person, session)
 
 
-@app.patch("/person/{id}", response_model=PersonPublic, tags=["Persons"])
-async def update_person(id: str, update_person: PersonUpdate):
-    return update_by_str_id(Person, id, update_person, engine)
+@app.patch("/person/{id}", response_model=PersonPublicWithRelations, tags=["Persons"])
+async def update_person(*, session: Session = Depends(get_session), id: str, update_person: PersonUpdate):
+    return update_by_str_id(Person, id, update_person, session)
 
 
 @app.delete("/person/{id}", tags=["Persons"])
-async def delete_person(id):
-    return delete_by_str_id(Person, id, engine)
+async def delete_person(*, session: Session = Depends(get_session), id):
+    return delete_by_str_id(Person, id, session)
 
 
 # Accommodations
 @app.get("/accommodations", tags=["Accommodations"])
-async def read_accomodations(limit: int = 1000) -> list[AccommodationPublic]:
-    with Session(engine) as session:
-        accommodations = session.exec(select(Accommodation)).all()
+async def read_accomodations(*, session: Session = Depends(get_session), limit: int = 1000) -> list[AccommodationPublic]:
+    accommodations = session.exec(select(Accommodation)).all()
     return accommodations
 
 
-@app.get("/accommodation/{id}", response_model=AccommodationPublic, tags=["Accommodations"])
-async def read_accomodation(id: str):
-    return get_by_str_id(Accommodation, id, engine)
+@app.get("/accommodation/{id}", response_model=AccomodationPublicWithPersons, tags=["Accommodations"])
+async def read_accomodation(*, session: Session = Depends(get_session), id: str):
+    return get_by_str_id(Accommodation, id, session)
 
 
-@app.post("/accommodation", response_model=AccommodationPublic, tags=["Accommodations"])
-async def add_accommodation(accommodation: AccommodationCreate):
-    return add_new(Accommodation, accommodation, engine)
+@app.post("/accommodation", response_model=AccomodationPublicWithPersons, tags=["Accommodations"], status_code=status.HTTP_201_CREATED)
+async def add_accommodation(*, session: Session = Depends(get_session), accommodation: AccommodationCreate):
+    return add_new(Accommodation, accommodation, session)
 
 
-@app.patch("/accommodation/{id}", response_model=AccommodationPublic, tags=["Accommodations"])
-async def update_accommodation(id, update_accommodation: UpdateAccommodation):
-    return update_by_str_id(Accommodation, id, update_accommodation, engine)
+@app.patch("/accommodation/{id}", response_model=AccomodationPublicWithPersons, tags=["Accommodations"])
+async def update_accommodation(*, session: Session = Depends(get_session), id, update_accommodation: UpdateAccommodation):
+    return update_by_str_id(Accommodation, id, update_accommodation, session)
 
 
 @app.delete("/accommodation/{id}", tags=["Accommodations"])
-async def delete_accommodation(id):
-    return delete_by_str_id(Accommodation, id, engine)
+async def delete_accommodation(*, session: Session = Depends(get_session), id):
+    return delete_by_str_id(Accommodation, id, session)
 
 
 # Categories
 @app.get("/categories", tags=["Categories"])
-async def read_categories(limit: int = 1000) -> list[CategoryPublic]:
-    with Session(engine) as session:
-        categories = session.exec(select(Category)).all()
+async def read_categories(*, session: Session = Depends(get_session), limit: int = 1000) -> list[CategoryPublic]:
+    categories = session.exec(select(Category)).all()
     return categories
 
 
-@app.get("/category/{id}", response_model=CategoryPublic, tags=["Categories"])
-async def read_category(id: str):
-    return get_by_str_id(Category, id, engine)
+@app.get("/category/{id}", response_model=CategoryPubliWithRelations, tags=["Categories"])
+async def read_category(*, session: Session = Depends(get_session), id: str):
+    return get_by_str_id(Category, id, session)
 
 
-@app.post("/category", response_model=CategoryPublic, tags=["Categories"])
-async def add_category(category: CategoryCreate):
-    return add_new(Category, category, engine)
+@app.post("/category", response_model=CategoryPubliWithRelations, tags=["Categories"], status_code=status.HTTP_201_CREATED)
+async def add_category(*, session: Session = Depends(get_session), category: CategoryCreate):
+    return add_new(Category, category, session)
 
 
-@app.patch("/category/{id}", response_model=CategoryPublic, tags=["Categories"])
-async def update_category(id, update_category: CategoryUpdate):
-    return update_by_str_id(Category, id, update_category, engine)
+@app.patch("/category/{id}", response_model=CategoryPubliWithRelations, tags=["Categories"])
+async def update_category(*, session: Session = Depends(get_session), id, update_category: CategoryUpdate):
+    return update_by_str_id(Category, id, update_category, session)
 
 
 @app.delete("/category/{id}", tags=["Categories"])
-async def delete_category(id):
-    return delete_by_str_id(Category, id, engine)
+async def delete_category(*, session: Session = Depends(get_session), id):
+    return delete_by_str_id(Category, id, session)
 
 
 # HandOut Rules
+
+@app.get("/handout_rules", tags=["Rules"])
+async def read_rules(*, session: Session = Depends(get_session), limit: int = 1000) -> list[HandOutRulePublic]:
+    categories = session.exec(select(HandOutRule)).all()
+    return categories
+
+
+@app.get("/handout_rule/{id}", response_model=HandOutRulePublicWithCategory, tags=["Rules"])
+async def read_rule(*, session: Session = Depends(get_session), id: str):
+    return get_by_str_id(HandOutRule, id, session)
+
+
+@app.post("/handout_rule", response_model=HandOutRulePublicWithCategory, tags=["Rules"], status_code=status.HTTP_201_CREATED)
+async def add_rule(*, session: Session = Depends(get_session), rule: HandOutRuleCreate):
+    return add_new(HandOutRule, rule, session)
+
+
+@app.patch("/handout_rule/{id}", response_model=HandOutRulePublicWithCategory, tags=["Rules"])
+async def update_rule(*, session: Session = Depends(get_session), id, update_rule: HandOutRuleUpdate):
+    return update_by_str_id(HandOutRule, id, update_rule, session)
+
+
+@app.delete("/handout_rule/{id}", tags=["Rules"])
+async def delete_rule(*, session: Session = Depends(get_session), id):
+    return delete_by_str_id(HandOutRule, id, session)
 
 # Users
