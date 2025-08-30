@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Potwierdzenie akredytacji</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 60px;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+        }
+        .title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 40px;
+            font-weight: bold;
+        }
+        .content {
+            font-size: 16px;
+        }
+        .footer {
+            margin-top: 100px;
+            padding: 5px 0;
+        }
+        .signature {
+            margin-top: 40px;
+            text-align: right;
+        }
+        .sidebar-label-left {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            writing-mode: sideways-rl;
+            text-orientation: mixed;
+            font-size: 28px;
+            color: gray;
+            transform: translate(0, -50%);
+        }
+
+        .sidebar-label-right {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            writing-mode: sideways-lr;
+            text-orientation: mixed;
+            font-size: 28px;
+            color: gray;
+            transform: translate(0, -50%);
+        }
+
+        table, th, td {
+            border: 2px solid grey;
+            border-collapse: collapse;
+            font-size: 14px;
+            padding: 5px
+          }
+
+          table {
+            margin-left: auto;
+            margin-right: auto;
+          }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div>{{ event_name }}</div>
+        <div>{{ place }}, {{ date }}</div>
+    </div>
+
+    <div class="title">Potwierdzenie akredytacji</div>
+
+    <div class="content">
+        <table>
+            <tr>
+                <th>Imię Nazwisko</th>
+                <td>{{ name }}</td>
+                <th>Grupa</th>
+                <td>{{ person_category }}</td>
+            </tr>
+            <tr>
+                <th>Data Przyjazdu</th>
+                <td>{{ arrival_date }}</td>
+                <th>Data Wyjazdu</th>
+                <td>{{ departure_date }}</td>
+            </tr>
+        </table>
+
+        <p>Otrzymałem:</p>
+        <ul>
+            {% for item in handout_items %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+        <div class="sidebar-label-left">{{ name }}</div>
+        <div class="sidebar-label-right">{{ name }}</div>
+    </div>
+
+    <div class="signature">
+        ............................................................<br>
+        Podpis</p>
+    </div>
+
+    <div class="footer">
+        <hr>
+        <p>Generated with GEM on {{ curent_datetime }}  by: {{ user }}</p>
+    </div>
+</body>
+</html>

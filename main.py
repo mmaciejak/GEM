@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+import datetime
 
 import uuid
 from models import (
@@ -25,7 +26,8 @@ from models import (
     HandOutRuleUpdate,
     HandOutRulePublicWithCategory
 )
-from database import get_by_str_id, add_new, update_by_str_id, delete_by_str_id
+from database import get_by_str_id, add_new, update_by_str_id, delete_by_str_id, uuid_converter
+from confirmation.generator import generate_pdf_confirmation
 
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -87,6 +89,35 @@ async def update_person(*, session: Session = Depends(get_session), id: str, upd
 async def delete_person(*, session: Session = Depends(get_session), id):
     return delete_by_str_id(Person, id, session)
 
+@app.post("person/check_in/{id}", tags=["Persons"])
+async def check_in_person(*, session: Session = Depends(get_session), id):
+    uuid_obj = uuid_converter(id)
+
+    person_data = session.get(Person, uuid_obj)
+    if not person_data:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    current_time_str =  datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    
+    try:
+        pdf_encoded_string = generate_pdf_confirmation(person_data.handout)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not generate pdf confirmation")
+    
+    update_dict = {
+        "checked_in": True,
+        "check_in_time": current_time_str
+    }
+    
+    person_data.sqlmodel_update(update_dict)
+    
+    session.add(person_data)
+    session.commit()
+    session.refresh(person_data)
+    
+    #TODO set checked in status
+    
+    return pdf_encoded_string
 
 # Accommodations
 @app.get("/accommodations", tags=["Accommodations"])
